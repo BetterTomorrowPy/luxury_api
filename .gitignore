@@ -99,3 +99,10 @@ ENV/
 
 # mypy
 .mypy_cache/
+.idea/
+#accounts/
+#luxury_api/
+#manage.py
+#posts/
+#upload_files.py
+#utils/
