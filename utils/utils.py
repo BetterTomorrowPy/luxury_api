@@ -6,7 +6,7 @@ import functools
 from datetime import datetime
 from django.utils import six
 from django.db import models
-from voluptuous import MultipleInvalid
+from voluptuous import MultipleInvalid, Schema
 
 from utils.exceptions import JsonResponse, ApiBadRequest
 
@@ -19,7 +19,7 @@ def generate_response(code=0, content={}, message=''):
     })
 
 
-def schema_validator(schema):
+def schema_validator(fields):
     """
     参数验证装饰器
     :param schema:
@@ -41,7 +41,10 @@ def schema_validator(schema):
                     _arguments = request.GET.dict()
                 elif 'POST' == request.method:
                     _arguments = request.POST.dict()
+
             try:
+                _schema = fields.get(request.method, {})
+                schema = Schema(_schema)
                 request.json_arguments = schema(_arguments)
             except MultipleInvalid as e:
                 error_message = f'path: {e.path} \n message: {e.error_message}'
@@ -52,6 +55,7 @@ def schema_validator(schema):
                 }
                 return ApiBadRequest(data=data)
             return method(request, *args, **kwargs)
+
         return wrapper
 
     return func_wrapper
@@ -60,7 +64,7 @@ def schema_validator(schema):
 class AuxiliaryMixin(object):
     """Model辅助类"""
 
-    def to_dict(self):
+    def to_dict(self, fields=[]):
         _json = self.__dict__
         _keys = _json.keys()
         if six.PY3:
@@ -69,6 +73,10 @@ class AuxiliaryMixin(object):
             if _k.startswith('_') or callable(_k):
                 _json.pop(_k)
                 continue
+            if fields:
+                if _k not in fields:
+                    _json.pop(_k)
+                    continue
             if isinstance(_json[_k], datetime):
                 _json[_k] = _json[_k].strftime('%Y-%m-%d %H:%M:%S') if _json[_k] else ''
         return _json

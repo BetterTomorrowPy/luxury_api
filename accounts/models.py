@@ -36,5 +36,4 @@ class UserProfile(models.Model, AuxiliaryMixin):
         ordering = ['-id', 'phone_no']
 
     def __str__(self):
-        return f
-        '{self.nick_name} - {self.get_is_active_display()}'
+        return f'{self.nick_name} - {self.get_is_active_display()}'
