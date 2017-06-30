@@ -9,17 +9,6 @@ from django.contrib.auth.models import User
 from utils.utils import BaseModel
 
 
-# class SourceReplaceMixin(object):
-#     """图片视频资源替换"""
-#
-#     def source_replace(self, new_uri=''):
-#         if not new_uri or (not new_uri.startswith('http://')
-#                            or not new_uri.startswith('https://')):
-#             self.uri = new_uri
-#             self.updated_at = datetime.now()
-#             self.save()
-
-
 class PostLabel(BaseModel):
     """"""
     user = models.ForeignKey(User, verbose_name='标签创建人')

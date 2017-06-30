@@ -10,8 +10,9 @@ class ViewHelperMixin(object):
     """class base view 辅助 Mixin"""
 
     def get_queryset(self, model=None, **kwargs):
-        if not model or issubclass(model, Model):
+        if not model or not issubclass(model, Model):
             raise TypeError('In get_queryset model is None or illegal.')
+        kwargs['is_deleted'] =  0
         return model.objects.filter(**kwargs)
 
     def generate_list(self, queryset=None):
@@ -29,7 +30,7 @@ class ViewHelperMixin(object):
         if not isinstance(queryset, (list, QuerySet)):
             raise TypeError('In paginator queryset illegal.')
 
-        p = Paginator(queryset, parmas.get('per_size', 15))
+        p = Paginator(queryset, int(parmas.get('per_size', 15)))
         page = int(parmas.get('page', 1))
         if page > p.num_pages:
             return [], p.count

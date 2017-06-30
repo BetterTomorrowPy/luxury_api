@@ -29,9 +29,8 @@ class PostLabelTestCase(TestCase):
         }
         response = self.client.get('/posts/post_label/', data=params)
         body = response.json()
-        print('get-body-> ', body)
+        # print('get-body-> ', body)
         self.assertEqual(body.get('code'), 1000)
-        requests.get()
 
     def test_post_label_create(self):
         u = User.objects.get(username=test_user['username'])
@@ -41,7 +40,7 @@ class PostLabelTestCase(TestCase):
         }
         response = self.client.post('/posts/post_label/', data=json.dumps(data), content_type='application/json')
         body = response.json()
-        print('body -> ', body)
+        # print('body -> ', body)
         self.assertEqual(body.get('code'), 1000)
 
 
@@ -70,3 +69,7 @@ class PostTestCase(TestCase):
         p = Post.objects.create(**params)
         self.assertEqual(p.post_title, '测试卡片')
         self.assertEqual(p.is_deleted, 0)
+
+        response = self.client.get('/posts/posts/', data={'page': 1, 'per_size': 15})
+        body = response.json()
+        self.assertEqual(body.get('code'), 1000)

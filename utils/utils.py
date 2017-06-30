@@ -11,6 +11,26 @@ from voluptuous import MultipleInvalid, Schema
 from utils.exceptions import JsonResponse, ApiBadRequest
 
 
+def gen_sub_dict(original={}, fields=[]):
+    """
+    :params
+        :original :type dict
+        :fields :type list
+    :return: dict
+    """
+    if not isinstance(original, dict):
+        raise TypeError('原始字典参数错误')
+    if not fields:
+        return original
+    _ = dict()
+    keys = original.keys()
+    for field in fields:
+        if field not in keys:
+            continue
+        _[field] = original[field]
+    return _
+
+
 def generate_response(code=0, content={}, message=''):
     return JsonResponse({
         'code': code,
