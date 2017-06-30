@@ -5,9 +5,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 
-from posts.models import Post, PostLabel
+from posts.models import Post, PostLabel, PostImage, PostVideo
 from posts.schemas import post_schema, post_label_schema
-from utils import BaseView, gen_sub_dict
+from utils import BaseView, gen_sub_dict, logger
 from utils.utils import generate_response, schema_validator
 from utils.exceptions import Api404
 
@@ -73,3 +73,39 @@ class PostView(BaseView):
         queryset = self.get_queryset(Post, **filters)
         posts, post_count = self.paginator(queryset, params)
         return generate_response(1000, self.generate_list(posts), '返回卡片成功')
+
+    def post(self, request):
+        """创建卡片"""
+        params = request.json_arguments
+
+        u = User.objects.get(username='guppy')
+        post_params = {
+            # 'user': request.user,
+            'user': u,
+            'post_type': params.get('post_type', 1),
+            'post_title': params.get('post_title', ''),
+            'post_content': params.get('post_content', ''),
+        }
+        p = Post.objects.create(**post_params)
+
+        labels = PostLabel.objects.filter(pk__in=params.get('label_ids', []))
+        p.labels = labels
+        p.save()
+
+        # post image
+        images = params.get('images', [])
+        for image in images:
+            try:
+                PostImage.objects.create(post=p, uri=image.strip())
+            except Exception as e:
+                logger.error(f'> created post image {p.id} - {image} failed.')
+
+        # post video.
+        videos = params.get('videos', [])
+        for video in videos:
+            try:
+                PostVideo.objects.create(post=p, uri=video.strip())
+            except Exception as e:
+                logger.error(f'> created post video {p.id} - {video} failed.')
+
+        return generate_response(1000, {'post_id': p.to_dict()}, '创建卡片成功')

@@ -1,7 +1,6 @@
 import json
-import requests
+
 from django.test import TestCase
-from django.utils.http import urlencode
 
 from posts.models import *
 
@@ -29,7 +28,6 @@ class PostLabelTestCase(TestCase):
         }
         response = self.client.get('/posts/post_label/', data=params)
         body = response.json()
-        # print('get-body-> ', body)
         self.assertEqual(body.get('code'), 1000)
 
     def test_post_label_create(self):
@@ -40,7 +38,6 @@ class PostLabelTestCase(TestCase):
         }
         response = self.client.post('/posts/post_label/', data=json.dumps(data), content_type='application/json')
         body = response.json()
-        # print('body -> ', body)
         self.assertEqual(body.get('code'), 1000)
 
 
@@ -54,22 +51,29 @@ class PostTestCase(TestCase):
             email='2222@163.com',
             password='bigbird'
         )
-        super(PostTestCase, cls).setUpClass()
-
-    def test_post_create(self):
-        u = User.objects.get(username='guppy')
         params = {
             'user': u,
-            'followers': None,
-            # 'label': None,
             'post_type': 3,
             'post_title': '测试卡片',
             'post_content': 'XXXXXXXXXXXXXXXX'
         }
-        p = Post.objects.create(**params)
-        self.assertEqual(p.post_title, '测试卡片')
-        self.assertEqual(p.is_deleted, 0)
+        Post.objects.create(**params)
+        super(PostTestCase, cls).setUpClass()
 
+    def test_get_post(self):
         response = self.client.get('/posts/posts/', data={'page': 1, 'per_size': 15})
+        body = response.json()
+        self.assertEqual(body.get('code'), 1000)
+
+    def test_create_post(self):
+        params = {
+            'label_ids': [],
+            'images': [],
+            'videos': [],
+            'post_type': 3,
+            'post_title': '测试卡片',
+            'post_content': 'XXXXXXXXXXXXXXXX'
+        }
+        response = self.client.post('/posts/posts/', data=json.dumps(params), content_type='application/json')
         body = response.json()
         self.assertEqual(body.get('code'), 1000)

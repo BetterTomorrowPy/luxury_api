@@ -21,7 +21,7 @@ class PostLabel(BaseModel):
     created_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'post_labels'
+        db_table = 'post_label'
         ordering = ['-label_status', 'id']
 
     def compute_hot(self):
@@ -38,9 +38,9 @@ class Post(BaseModel):
         (4, '文本+图片+视频'),
         (0, '其它')
     )
-    user = models.OneToOneField(User, verbose_name='发帖人')
-    followers = models.ForeignKey(User, related_name='followers', verbose_name='关注用户', blank=True, null=True)
-    label = models.ManyToManyField(PostLabel)
+    user = models.ForeignKey(User, verbose_name='发帖人')
+    # followers = models.ManyToManyField(User, related_name='followers', verbose_name='关注用户')
+    labels = models.ManyToManyField(PostLabel)
     post_type = models.SmallIntegerField('卡片类型', choices=POST_TYPES, default=1)
 
     post_title = models.CharField('标题', max_length=255, null=True, blank=True)
@@ -55,7 +55,7 @@ class Post(BaseModel):
     updated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'posts'
+        db_table = 'post'
         ordering = ['-updated_at']
 
     def __str__(self):
@@ -68,7 +68,20 @@ class Post(BaseModel):
         return self.postcomment_set.all().count()
 
 
-class PostImages(BaseModel):
+class PostFollowers(BaseModel):
+    post = models.ForeignKey(Post)
+    user = models.ForeignKey(User)
+    is_deleted = models.SmallIntegerField(choices=(
+        (0, '未删除'),
+        (1, '已删除')
+    ), default=0)
+    created_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'followers'
+
+
+class PostImage(BaseModel):
     """"""
     post = models.ForeignKey(Post)
     uri = models.URLField('图片地址')
@@ -80,11 +93,11 @@ class PostImages(BaseModel):
     updated_at = models.DateTimeField('图片更新时间', auto_now_add=True)
 
     class Meta:
-        db_table = 'post_images'
+        db_table = 'post_image'
         ordering = ['-updated_at']
 
 
-class PostVideos(BaseModel):
+class PostVideo(BaseModel):
     """卡片视频内容"""
     post = models.ForeignKey(Post)
     uri = models.URLField('视频地址')
@@ -96,7 +109,7 @@ class PostVideos(BaseModel):
     created_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'post_videos'
+        db_table = 'post_video'
         ordering = ['-updated_at']
 
 
@@ -123,6 +136,9 @@ class CommentComment(BaseModel):
     ), default=0)
     created_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        db_table = 'comment_comment'
+
 
 class PostComment(BaseModel):
     """卡片评论"""
@@ -138,7 +154,7 @@ class PostComment(BaseModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'post_comments'
+        db_table = 'post_comment'
         ordering = ['-created_at']
 
     def compute_like_count(self):
