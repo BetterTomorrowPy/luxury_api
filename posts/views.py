@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 
-from posts.models import Post, PostLabel, PostImage, PostVideo
+from posts.models import (Post, PostLabel, PostImage, PostVideo, PostComment,
+                          PostFollowers, CommentComment)
 from posts.schemas import post_schema, post_label_schema
 from utils import BaseView, gen_sub_dict, logger
 from utils.utils import generate_response, schema_validator
@@ -109,3 +110,69 @@ class PostView(BaseView):
                 logger.error(f'> created post video {p.id} - {video} failed.')
 
         return generate_response(1000, {'post_id': p.to_dict()}, '创建卡片成功')
+
+    def delete(self, request):
+        """"""
+        params = request.json_arguments
+        post_id = params.get('post_id')
+        try:
+            p = Post.objects.get(pk=post_id)
+            p.is_deleted = 1
+            p.save()
+            pis = PostImage.objects.filter(post=p)
+            for pi in pis:
+                pi.is_deleted = 1
+                pi.save()
+            pvs = PostVideo.objects.filter(post=p)
+            for pv in pvs:
+                pv.is_deleted = 1
+                pv.save()
+            generate_response(1000, {'result': True})
+        except Exception as e:
+            generate_response(1000, {'result': False}, '-'.join(e.args))
+
+
+class FollowerView(BaseView):
+    """"""
+    def get(self, request):
+        """获取卡片所有粉丝"""
+        post_id = request.json_arguments.get('post_id')
+        post = get_object_or_404(Post, id=post_id)
+        _followers = PostFollowers.objects.filter(post=post)
+        followers, count = self.paginator(_followers, request.json_arguments)
+        return generate_response(1000, self.generate_list(followers))
+
+    def post(self, request):
+        post_id = request.json_arguments.get('post_id')
+        user_id = request.json_arguments.get('user_id')
+        post = get_object_or_404(Post, id=post_id)
+        user = get_object_or_404(User, id=user_id)
+        post_follower = {
+            'post': post,
+            'user': user
+        }
+        pf = PostFollowers.objects.create(**post_follower)
+        return generate_response(1000, pf.to_dict())
+
+    def delete(self, request):
+        post_id = request.json_arguments.get('post_id')
+        user_id = request.json_arguments.get('user_id')
+        post = get_object_or_404(Post, id=post_id)
+        user = get_object_or_404(User, id=user_id)
+        post_follower = {
+            'post': post,
+            'user': user
+        }
+        pf = get_object_or_404(PostFollowers, **post_follower)
+        pf.is_deleted = 1
+        pf.save()
+        return generate_response(message='取消喜欢成功')
+
+
+class CommentView(BaseView):
+    """卡片评论"""
+
+    def get(self, request):
+        """"""
+        post = Post.objects.get(pk=request.json_arguments.get('post_id'))
+        comments = self.get_queryset(PostComment, post=post)

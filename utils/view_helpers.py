@@ -13,7 +13,7 @@ class ViewHelperMixin(object):
         if not model or not issubclass(model, Model):
             raise TypeError('In get_queryset model is None or illegal.')
         kwargs['is_deleted'] =  0
-        return model.objects.filter(**kwargs)
+        return model.objects.select_related.filter(**kwargs)
 
     def generate_list(self, queryset=None):
         if not queryset:
