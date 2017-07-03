@@ -79,6 +79,7 @@ class PostFollowers(BaseModel):
 
     class Meta:
         db_table = 'followers'
+        ordering = ['id']
 
 
 class PostImage(BaseModel):
@@ -138,12 +139,13 @@ class CommentComment(BaseModel):
 
     class Meta:
         db_table = 'comment_comment'
+        ordering = ['created_at']
 
 
 class PostComment(BaseModel):
     """卡片评论"""
     post = models.ForeignKey(Post)
-    user = models.OneToOneField(User, verbose_name='评论人')
+    user = models.ForeignKey(User, verbose_name='评论人')
 
     content = models.TextField('评论内容')
     like_count = models.IntegerField('评论点赞数', default=0)

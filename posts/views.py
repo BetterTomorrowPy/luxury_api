@@ -7,10 +7,10 @@ from django.contrib.auth.models import User
 
 from posts.models import (Post, PostLabel, PostImage, PostVideo, PostComment,
                           PostFollowers, CommentComment)
-from posts.schemas import post_schema, post_label_schema
+from posts.schemas import post_schema, post_label_schema, follower_schema, comment_schema
 from utils import BaseView, gen_sub_dict, logger
 from utils.utils import generate_response, schema_validator
-from utils.exceptions import Api404
+from utils.exceptions import Api404, ApiBadRequest
 
 
 def get_object_or_404(model=None, **kwargs):
@@ -127,13 +127,19 @@ class PostView(BaseView):
             for pv in pvs:
                 pv.is_deleted = 1
                 pv.save()
-            generate_response(1000, {'result': True})
+            return generate_response(1000, {'result': True})
         except Exception as e:
-            generate_response(1000, {'result': False}, '-'.join(e.args))
+            return generate_response(1000, {'result': False}, '-'.join(e.args))
 
 
 class FollowerView(BaseView):
     """"""
+
+    @method_decorator(schema_validator(follower_schema))
+    @csrf_exempt
+    def dispatch(self, request, *args, **kwargs):
+        return super(FollowerView, self).dispatch(request, *args, **kwargs)
+
     def get(self, request):
         """获取卡片所有粉丝"""
         post_id = request.json_arguments.get('post_id')
@@ -166,13 +172,59 @@ class FollowerView(BaseView):
         pf = get_object_or_404(PostFollowers, **post_follower)
         pf.is_deleted = 1
         pf.save()
-        return generate_response(message='取消喜欢成功')
+        return generate_response(1000, message='取消喜欢成功')
 
 
 class CommentView(BaseView):
     """卡片评论"""
+    
+    @method_decorator(schema_validator(comment_schema))
+    @csrf_exempt
+    def dispatch(self, request, *args, **kwargs):
+        return super(CommentView, self).dispatch(request, *args, **kwargs)
 
     def get(self, request):
         """"""
         post = Post.objects.get(pk=request.json_arguments.get('post_id'))
-        comments = self.get_queryset(PostComment, post=post)
+        post_comments = self.get_queryset(PostComment, post=post)
+        _comments = self.paginator(post_comments)
+        comments = list()
+        for _comment in _comments:
+            item = _comment.to_dict()
+            _c2s = _comment.commentcomment_set.all()
+            c2s = list()
+            if _c2s:
+                c2s = [_c.to_dict() for _c in _c2s]
+            item['comment_comments'] = c2s
+
+        return generate_response(1000, comments)
+
+    def post(self, request):
+        """
+        :param request.json_arguments:
+        :return:
+        """
+        comment_type = request.json_arguments.get('comment_type')
+
+        if 0 == comment_type:
+            post = Post.objects.get(pk=request.json_arguments.get('post_id'))
+            pc = {
+                'post': post,
+                'user': request.user,
+                'content': request.json_arguments['content']
+            }
+            post_comment = PostComment.objects.create(**pc)
+        elif 1 == comment_type:
+            _post_comment = PostComment.objects.get(pk=request.json_arguments.get('post_comment_id'))
+            comment_from = User.objects.get(pk=request.json_arguments.get('comment_from_id'))
+            comment_to = User.objects.get(pk=request.json_arguments.get('comment_to_id'))
+            cc = {
+                'post_comment': _post_comment,
+                'comment_from': comment_from,
+                'comment_to': comment_to,
+                'content': request.json_arguments['content'] or ''
+            }
+            post_comment = CommentComment.objects.create(**cc)
+        else:
+            raise ApiBadRequest
+        return generate_response(1000, post_comment.to_dict())

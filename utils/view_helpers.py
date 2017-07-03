@@ -13,18 +13,18 @@ class ViewHelperMixin(object):
         if not model or not issubclass(model, Model):
             raise TypeError('In get_queryset model is None or illegal.')
         kwargs['is_deleted'] =  0
-        return model.objects.select_related.filter(**kwargs)
+        return model.objects.select_related().filter(**kwargs)
 
     def generate_list(self, queryset=None):
         if not queryset:
             return []
         if not isinstance(queryset, Page):
             raise TypeError('In generate_list queryset illegal.')
-        _ = list()
+        result = list()
         for row in queryset:
-            _.append(row.to_dict())
+            result.append(row.to_dict())
 
-        return _
+        return result
 
     def paginator(self, queryset=[], parmas={}):
         if not isinstance(queryset, (list, QuerySet)):
