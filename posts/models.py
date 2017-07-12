@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 
-from django.db import models
+from django.db import models, F
 from django.contrib.auth.models import User
 
 from utils.utils import BaseModel
@@ -62,7 +62,7 @@ class Post(BaseModel):
         return f'{self.post_title} - {self.user.username}'
 
     def compute_like_count(self):
-        self.like_count += 1
+        self.objects.update(like_count=F('like_count') + 1)
 
     def compute_comment_count(self):
         return self.postcomment_set.all().count()
@@ -160,5 +160,4 @@ class PostComment(BaseModel):
         ordering = ['-created_at']
 
     def compute_like_count(self):
-        self.like_count += 1
-        self.save()
+        self.objects.update(like_count=F('like_count') + 1)
